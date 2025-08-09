@@ -56,7 +56,7 @@ jobs:
               break
             fi
             echo 'MySQL is unavailable - sleeping'
-            sleep 1
+            sleep 2
           done
           if [ "$i" = 0 ]; then
             echo 'MySQL is still unavailable - exiting'
@@ -82,12 +82,28 @@ jobs:
           echo "=== Initial Schema Deployment Stage ==="
           echo "Creating database and ClimateData table..."
           
+          # Test connection first
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT 1" || exit 1
+          
           # Create database
-          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/01_create_database.sql
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "CREATE DATABASE IF NOT EXISTS project_db;"
           echo "✅ Database created"
           
           # Create ClimateData table
-          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/02_create_climate_table.sql
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "
+          CREATE TABLE IF NOT EXISTS ClimateData (
+              record_id INT PRIMARY KEY AUTO_INCREMENT,
+              location VARCHAR(100) NOT NULL,
+              record_date DATE NOT NULL,
+              temperature FLOAT NOT NULL,
+              precipitation FLOAT NOT NULL
+          );"
+          
+          # Add indexes
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "
+          CREATE INDEX IF NOT EXISTS idx_location_date ON ClimateData(location, record_date);
+          CREATE INDEX IF NOT EXISTS idx_temperature ON ClimateData(temperature);"
+          
           echo "✅ ClimateData table created with initial structure"
 
       - name: Stage 3 - Schema Update (Add Humidity Column)
@@ -95,7 +111,9 @@ jobs:
           echo "=== Schema Update Stage ==="
           echo "Adding humidity column to ClimateData table..."
           
-          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/03_add_humidity_column.sql
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "
+          ALTER TABLE ClimateData ADD COLUMN IF NOT EXISTS humidity FLOAT NOT NULL DEFAULT 50.0;"
+          
           echo "✅ Humidity column added successfully"
 
       - name: Stage 4 - Data Seeding
@@ -103,7 +121,45 @@ jobs:
           echo "=== Data Seeding Stage ==="
           echo "Populating ClimateData table with sample data..."
           
-          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/04_seed_data.sql
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "
+          INSERT INTO ClimateData (location, record_date, temperature, precipitation, humidity) VALUES
+          ('Toronto', '2024-01-15', 2.5, 15.2, 75.5),
+          ('Toronto', '2024-02-15', 5.0, 8.5, 68.2),
+          ('Toronto', '2024-03-15', 12.5, 25.0, 65.8),
+          ('Toronto', '2024-04-15', 18.2, 30.5, 62.4),
+          ('Toronto', '2024-05-15', 22.8, 45.2, 58.9),
+          ('Toronto', '2024-06-15', 28.5, 12.8, 55.3),
+          ('Vancouver', '2024-01-15', 8.2, 85.5, 82.1),
+          ('Vancouver', '2024-02-15', 10.5, 92.3, 85.7),
+          ('Vancouver', '2024-03-15', 14.8, 68.9, 78.5),
+          ('Vancouver', '2024-04-15', 17.2, 55.2, 72.8),
+          ('Vancouver', '2024-05-15', 20.5, 35.8, 68.2),
+          ('Vancouver', '2024-06-15', 24.8, 15.5, 62.5),
+          ('New York', '2024-01-15', 4.5, 22.8, 72.5),
+          ('New York', '2024-02-15', 7.2, 18.5, 69.8),
+          ('New York', '2024-03-15', 15.8, 35.2, 66.2),
+          ('New York', '2024-04-15', 20.5, 42.8, 63.5),
+          ('New York', '2024-05-15', 25.2, 55.5, 60.8),
+          ('New York', '2024-06-15', 30.5, 28.2, 58.2),
+          ('London', '2024-01-15', 6.8, 45.2, 85.5),
+          ('London', '2024-02-15', 9.2, 38.5, 82.8),
+          ('London', '2024-03-15', 12.5, 42.8, 78.5),
+          ('London', '2024-04-15', 16.8, 35.2, 75.2),
+          ('London', '2024-05-15', 19.5, 28.5, 71.8),
+          ('London', '2024-06-15', 23.2, 22.8, 68.5),
+          ('Sydney', '2024-01-15', 26.5, 8.5, 65.2),
+          ('Sydney', '2024-02-15', 25.8, 12.8, 68.5),
+          ('Sydney', '2024-03-15', 23.2, 35.5, 72.8),
+          ('Sydney', '2024-04-15', 19.8, 45.2, 75.5),
+          ('Sydney', '2024-05-15', 16.5, 55.8, 78.2),
+          ('Sydney', '2024-06-15', 13.2, 68.5, 82.5),
+          ('Tokyo', '2024-01-15', 8.5, 15.2, 55.8),
+          ('Tokyo', '2024-02-15', 11.2, 22.5, 58.2),
+          ('Tokyo', '2024-03-15', 16.8, 85.5, 65.5),
+          ('Tokyo', '2024-04-15', 22.5, 125.8, 72.8),
+          ('Tokyo', '2024-05-15', 26.8, 155.2, 78.5),
+          ('Tokyo', '2024-06-15', 28.2, 185.5, 82.2);"
+          
           echo "✅ Sample climate data inserted successfully"
 
       - name: Stage 5 - Concurrent Query Execution
@@ -120,30 +176,36 @@ jobs:
           echo "=== Validation Stage ==="
           echo "Verifying database structure and data..."
           
-          # Run validation queries and capture output
-          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/05_validation.sql > validation_results.txt
+          echo "=== Table Structure ==="
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "DESCRIBE ClimateData;"
           
-          echo "=== Validation Results ==="
-          cat validation_results.txt
-          
-          # Additional verification queries
-          echo "=== Additional Verification ==="
-          echo "Checking if humidity column exists:"
+          echo "=== Column Verification ==="
           mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "
           SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE 
           FROM INFORMATION_SCHEMA.COLUMNS 
           WHERE TABLE_SCHEMA = 'project_db' 
-          AND TABLE_NAME = 'ClimateData' 
-          AND COLUMN_NAME = 'humidity';"
+          AND TABLE_NAME = 'ClimateData';"
           
-          echo "Current record count:"
-          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "
-          USE project_db; 
-          SELECT COUNT(*) as total_records FROM ClimateData;"
+          echo "=== Record Count ==="
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "SELECT COUNT(*) as total_records FROM ClimateData;"
           
-          echo "Sample of recent data:"
-          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "
-          USE project_db; 
+          echo "=== Location Summary ==="
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "
+          SELECT location, COUNT(*) as record_count 
+          FROM ClimateData 
+          GROUP BY location 
+          ORDER BY location;"
+          
+          echo "=== Humidity Column Check ==="
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "
+          SELECT 
+            MIN(humidity) as min_humidity,
+            MAX(humidity) as max_humidity,
+            AVG(humidity) as avg_humidity
+          FROM ClimateData;"
+          
+          echo "=== Sample Data ==="
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "
           SELECT * FROM ClimateData ORDER BY record_id DESC LIMIT 5;"
           
           echo "✅ All validations completed successfully"
