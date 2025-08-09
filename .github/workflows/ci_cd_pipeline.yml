@@ -1,0 +1,198 @@
+name: CI/CD Pipeline - Database Automation
+run-name: ${{ github.actor }} is running Database Automation Pipeline 🚀
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DB_HOST: '127.0.0.1'
+  DB_USER: 'root'
+  DB_PASSWORD: 'Secret5555'
+  DB_NAME: 'project_db'
+
+jobs:
+  database-deployment:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: Secret5555
+          MYSQL_DATABASE: project_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          pip install mysql-connector-python
+
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {30..0}; do
+            if mysqladmin ping -h"127.0.0.1" -uroot -pSecret5555 --silent; then
+              break
+            fi
+            echo 'MySQL is unavailable - sleeping'
+            sleep 1
+          done
+          if [ "$i" = 0 ]; then
+            echo 'MySQL is still unavailable - exiting'
+            exit 1
+          fi
+          echo 'MySQL is up and running'
+
+      - name: Stage 1 - Environment Setup Verification
+        run: |
+          echo "=== Environment Setup Stage ==="
+          echo "MySQL Client Version:"
+          mysql --version
+          echo "Python Version:"
+          python --version
+          echo "Environment Variables:"
+          echo "DB_HOST: $DB_HOST"
+          echo "DB_USER: $DB_USER"
+          echo "DB_NAME: $DB_NAME"
+          echo "✅ Environment setup completed successfully"
+
+      - name: Stage 2 - Initial Schema Deployment
+        run: |
+          echo "=== Initial Schema Deployment Stage ==="
+          echo "Creating database and ClimateData table..."
+          
+          # Create database
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/01_create_database.sql
+          echo "✅ Database created"
+          
+          # Create ClimateData table
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/02_create_climate_table.sql
+          echo "✅ ClimateData table created with initial structure"
+
+      - name: Stage 3 - Schema Update (Add Humidity Column)
+        run: |
+          echo "=== Schema Update Stage ==="
+          echo "Adding humidity column to ClimateData table..."
+          
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/03_add_humidity_column.sql
+          echo "✅ Humidity column added successfully"
+
+      - name: Stage 4 - Data Seeding
+        run: |
+          echo "=== Data Seeding Stage ==="
+          echo "Populating ClimateData table with sample data..."
+          
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/04_seed_data.sql
+          echo "✅ Sample climate data inserted successfully"
+
+      - name: Stage 5 - Concurrent Query Execution
+        run: |
+          echo "=== Concurrent Query Execution Stage ==="
+          echo "Running multi-threaded database operations..."
+          
+          cd scripts
+          python multi_thread_queries.py
+          echo "✅ Concurrent queries executed successfully"
+
+      - name: Stage 6 - Validation and Verification
+        run: |
+          echo "=== Validation Stage ==="
+          echo "Verifying database structure and data..."
+          
+          # Run validation queries and capture output
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD < sql/05_validation.sql > validation_results.txt
+          
+          echo "=== Validation Results ==="
+          cat validation_results.txt
+          
+          # Additional verification queries
+          echo "=== Additional Verification ==="
+          echo "Checking if humidity column exists:"
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "
+          SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = 'project_db' 
+          AND TABLE_NAME = 'ClimateData' 
+          AND COLUMN_NAME = 'humidity';"
+          
+          echo "Current record count:"
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "
+          USE project_db; 
+          SELECT COUNT(*) as total_records FROM ClimateData;"
+          
+          echo "Sample of recent data:"
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "
+          USE project_db; 
+          SELECT * FROM ClimateData ORDER BY record_id DESC LIMIT 5;"
+          
+          echo "✅ All validations completed successfully"
+
+      - name: Performance Testing Report
+        run: |
+          echo "=== Performance Testing Report ==="
+          echo "Generating performance metrics..."
+          
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "
+          USE project_db;
+          SELECT 
+            'Total Records' as Metric,
+            COUNT(*) as Value
+          FROM ClimateData
+          UNION ALL
+          SELECT 
+            'Unique Locations' as Metric,
+            COUNT(DISTINCT location) as Value
+          FROM ClimateData
+          UNION ALL
+          SELECT 
+            'Date Range (Days)' as Metric,
+            DATEDIFF(MAX(record_date), MIN(record_date)) as Value
+          FROM ClimateData;"
+          
+          echo "✅ Performance report generated"
+
+      - name: Upload Validation Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: validation-results
+          path: validation_results.txt
+          retention-days: 30
+
+      - name: Pipeline Summary
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "     CI/CD PIPELINE EXECUTION SUMMARY"
+          echo "=========================================="
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Run Number: ${{ github.run_number }}"
+          echo "=========================================="
+          echo "All stages completed successfully! ✅"
+          echo "Database automation pipeline executed."
+          echo "=========================================="

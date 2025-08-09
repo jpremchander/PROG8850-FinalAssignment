@@ -1,0 +1,110 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  
+  # Docker container logs
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 10s
+    timeout: 5s
+    
+  # MySQL monitoring
+  mysql:
+    endpoint: mysql-monitored:3306
+    username: root
+    password: Secret5555
+    database: project_db
+    collection_interval: 30s
+    metrics:
+      mysql.buffer_pool.data_pages:
+        enabled: true
+      mysql.buffer_pool.pages:
+        enabled: true
+      mysql.commands:
+        enabled: true
+      mysql.connections:
+        enabled: true
+      mysql.handlers:
+        enabled: true
+      mysql.locks:
+        enabled: true
+      mysql.operations:
+        enabled: true
+      mysql.page_operations:
+        enabled: true
+      mysql.row_operations:
+        enabled: true
+      mysql.sorts:
+        enabled: true
+      mysql.threads:
+        enabled: true
+
+  # Host metrics
+  hostmetrics:
+    collection_interval: 60s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      disk:
+      filesystem:
+      network:
+      process:
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  
+  memory_limiter:
+    limit_mib: 1000
+    
+  resourcedetection:
+    detectors: [env, system, docker]
+    timeout: 5s
+
+exporters:
+  clickhouse:
+    endpoint: tcp://signoz-clickhouse:9000
+    database: signoz_traces
+    username: default
+    password: ""
+    
+  clickhousemetricswrite:
+    endpoint: tcp://signoz-clickhouse:9000
+    database: signoz_metrics
+    username: default
+    password: ""
+
+  clickhouselogsexporter:
+    dsn: tcp://signoz-clickhouse:9000/signoz_logs
+    timeout: 5s
+    
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse]
+      
+    metrics:
+      receivers: [otlp, mysql, hostmetrics, docker_stats]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [clickhousemetricswrite]
+      
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouselogsexporter]
