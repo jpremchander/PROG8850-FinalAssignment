@@ -234,12 +234,31 @@ jobs:
           
           echo "✅ Performance report generated"
 
-      - name: Upload Validation Results
-        uses: actions/upload-artifact@v3
+      - name: Generate Summary Report
+        run: |
+          echo "=== PROG8850 Database Automation Pipeline Summary ===" > pipeline_summary.txt
+          echo "Execution Date: $(date)" >> pipeline_summary.txt
+          echo "Repository: ${{ github.repository }}" >> pipeline_summary.txt
+          echo "Branch: ${{ github.ref_name }}" >> pipeline_summary.txt
+          echo "Commit: ${{ github.sha }}" >> pipeline_summary.txt
+          echo "" >> pipeline_summary.txt
+          echo "Pipeline Stages Completed:" >> pipeline_summary.txt
+          echo "✅ Environment Setup" >> pipeline_summary.txt
+          echo "✅ Database Schema Deployment" >> pipeline_summary.txt
+          echo "✅ Schema Update (Humidity Column)" >> pipeline_summary.txt
+          echo "✅ Data Seeding (36 Records)" >> pipeline_summary.txt
+          echo "✅ Concurrent Query Testing" >> pipeline_summary.txt
+          echo "✅ Validation and Verification" >> pipeline_summary.txt
+          echo "" >> pipeline_summary.txt
+          echo "Final Record Count:" >> pipeline_summary.txt
+          mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD project_db -e "SELECT COUNT(*) as total_records FROM ClimateData;" >> pipeline_summary.txt
+
+      - name: Upload Pipeline Summary
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: validation-results
-          path: validation_results.txt
+          name: pipeline-summary
+          path: pipeline_summary.txt
           retention-days: 30
 
       - name: Pipeline Summary
