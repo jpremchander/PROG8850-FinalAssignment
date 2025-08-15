@@ -19,29 +19,6 @@ receivers:
     password: Secret5555
     database: project_db
     collection_interval: 30s
-    metrics:
-      mysql.buffer_pool.data_pages:
-        enabled: true
-      mysql.buffer_pool.pages:
-        enabled: true
-      mysql.commands:
-        enabled: true
-      mysql.connections:
-        enabled: true
-      mysql.handlers:
-        enabled: true
-      mysql.locks:
-        enabled: true
-      mysql.operations:
-        enabled: true
-      mysql.page_operations:
-        enabled: true
-      mysql.row_operations:
-        enabled: true
-      mysql.sorts:
-        enabled: true
-      mysql.threads:
-        enabled: true
 
   # Host metrics
   hostmetrics:
@@ -67,28 +44,16 @@ processors:
   
   memory_limiter:
     limit_mib: 1000
+    check_interval: 1s
     
   resourcedetection:
     detectors: [env, system, docker]
     timeout: 5s
 
 exporters:
-  clickhouse:
-    endpoint: tcp://signoz-clickhouse:9000
-    database: signoz_traces
-    username: default
-    password: ""
-    
-  clickhousemetricswrite:
-    endpoint: tcp://signoz-clickhouse:9000
-    database: signoz_metrics
-    username: default
-    password: ""
-
+  clickhousetraces: {}
   clickhouselogsexporter:
     dsn: tcp://signoz-clickhouse:9000/signoz_logs
-    timeout: 5s
-    
   logging:
     loglevel: debug
 
@@ -97,14 +62,14 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse]
-      
+      exporters: [logging]
+
     metrics:
       receivers: [otlp, mysql, hostmetrics, docker_stats]
       processors: [memory_limiter, resourcedetection, batch]
-      exporters: [clickhousemetricswrite]
-      
+      exporters: [logging]
+
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [clickhouselogsexporter]
+      exporters: [logging]

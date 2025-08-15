@@ -1,0 +1,101 @@
+# SigNoz Alert Configuration
+# This file demonstrates the alert configuration for Task 2 completion
+
+# Performance Alerts Configuration
+alerts:
+  # High CPU Usage Alert
+  - name: "MySQL High CPU Usage"
+    condition: "cpu_usage > 80"
+    duration: "5m"
+    severity: "warning"
+    description: "MySQL CPU usage is above 80% for 5 minutes"
+    notification:
+      email: "pjebastian5480@contestogac.on.ca"
+      
+  # Memory Pressure Alert
+  - name: "MySQL Memory Pressure"
+    condition: "memory_usage > 90"
+    duration: "3m"
+    severity: "critical"
+    description: "MySQL memory utilization is above 90%"
+    notification:
+      email: "pjebastian5480@contestogac.on.ca"
+      
+  # Slow Query Alert
+  - name: "MySQL Slow Queries"
+    condition: "query_duration > 5"
+    duration: "1m"
+    severity: "warning"
+    description: "MySQL queries taking longer than 5 seconds"
+    notification:
+      email: "pjebastian5480@contestogac.on.ca"
+      
+  # Connection Limit Alert
+  - name: "MySQL Connection Limit"
+    condition: "active_connections > 180"
+    duration: "2m"
+    severity: "warning"
+    description: "MySQL active connections above 90% of limit (200)"
+    notification:
+      email: "pjebastian5480@contestogac.on.ca"
+
+# Database Error Alerts
+error_alerts:
+  # Connection Failures
+  - name: "MySQL Connection Failures"
+    condition: "connection_error_rate > 5"
+    duration: "2m"
+    severity: "critical"
+    description: "MySQL connection error rate above 5%"
+    
+  # Query Failures
+  - name: "MySQL Query Failures"
+    condition: "query_error_rate > 2"
+    duration: "1m"
+    severity: "warning"
+    description: "MySQL query failure rate above 2%"
+
+# System Resource Alerts
+system_alerts:
+  # Disk Space
+  - name: "MySQL Disk Space Low"
+    condition: "disk_space_available < 20"
+    duration: "5m"
+    severity: "critical"
+    description: "MySQL data directory disk space below 20%"
+    
+  # Disk I/O
+  - name: "MySQL High Disk I/O"
+    condition: "disk_io_util > 85"
+    duration: "3m"
+    severity: "warning"
+    description: "MySQL disk I/O utilization above 85%"
+
+# Email Configuration
+email_config:
+  smtp_server: "smtp.conestogac.on.ca"
+  smtp_port: 587
+  username: "pjebastian5480@contestogac.on.ca"
+  from_address: "pjebastian5480@contestogac.on.ca"
+  to_address: "pjebastian5480@contestogac.on.ca"
+  
+# Dashboard Metrics Configuration
+dashboard_metrics:
+  database_performance:
+    - cpu_usage
+    - memory_utilization
+    - active_connections
+    - query_throughput
+    - query_duration
+    
+  climatedata_table:
+    - table_size
+    - row_count
+    - index_usage
+    - lock_contention
+    
+  system_metrics:
+    - disk_io_operations
+    - network_traffic
+    - error_rates
+    - response_times

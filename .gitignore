@@ -179,3 +179,65 @@ cython_debug/
 .pypirc
 
 bin
+
+# Database files and data directories
+monitoring/mysql-data/
+monitoring/signoz-data/
+*.sql~
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker volumes and persistent data
+data/
+volumes/
+logs/
+*.log
+
+# MySQL specific files
+*.sock
+*.pid
+*.cnf
+auto.cnf
+binlog.*
+ib_logfile*
+ib_buffer_pool
+ibtmp*
+*.frm
+*.ibd
+*.MYD
+*.MYI
+
+# ClickHouse data
+clickhouse-data/
+clickhouse-logs/
+
+# Kafka/Zookeeper data
+kafka-data/
+zookeeper-data/
+
+# SigNoz specific data
+otel-collector-data/
+alertmanager-data/
+
+# Monitoring tool generated files
+*.lock
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup

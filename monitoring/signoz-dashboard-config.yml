@@ -1,0 +1,167 @@
+# SigNoz Dashboard Configuration
+# Comprehensive monitoring dashboard setup for MySQL database
+
+version: "1.0"
+dashboard_name: "PROG8850 Database Automation Monitoring"
+
+# Main Dashboard Panels
+panels:
+  
+  # Database Performance Section
+  database_performance:
+    title: "MySQL Database Performance"
+    panels:
+      - name: "CPU Usage"
+        type: "graph"
+        query: "mysql_cpu_usage"
+        unit: "percent"
+        thresholds: [80, 95]
+        
+      - name: "Memory Utilization"
+        type: "graph" 
+        query: "mysql_memory_usage"
+        unit: "percent"
+        thresholds: [85, 95]
+        
+      - name: "Active Connections"
+        type: "stat"
+        query: "mysql_connections_active"
+        unit: "connections"
+        thresholds: [150, 180]
+        
+      - name: "Query Throughput"
+        type: "graph"
+        query: "mysql_queries_per_second"
+        unit: "qps"
+        
+      - name: "Average Query Duration"
+        type: "stat"
+        query: "mysql_query_duration_avg"
+        unit: "seconds"
+        thresholds: [2, 5]
+
+  # ClimateData Table Specific Metrics
+  climatedata_monitoring:
+    title: "ClimateData Table Monitoring"
+    panels:
+      - name: "Table Size"
+        type: "stat"
+        query: "mysql_table_size{table='ClimateData'}"
+        unit: "MB"
+        
+      - name: "Row Count"
+        type: "stat"
+        query: "mysql_table_rows{table='ClimateData'}"
+        unit: "rows"
+        target: 51
+        
+      - name: "SELECT Operations"
+        type: "graph"
+        query: "mysql_select_operations{table='ClimateData'}"
+        unit: "ops/sec"
+        
+      - name: "INSERT Operations"
+        type: "graph"
+        query: "mysql_insert_operations{table='ClimateData'}"
+        unit: "ops/sec"
+        
+      - name: "Index Usage"
+        type: "stat"
+        query: "mysql_index_usage{table='ClimateData'}"
+        unit: "percent"
+        target: 95
+
+  # System Resources
+  system_resources:
+    title: "System Resource Monitoring"
+    panels:
+      - name: "Disk I/O Operations"
+        type: "graph"
+        query: "mysql_disk_io_ops"
+        unit: "ops/sec"
+        
+      - name: "Network Traffic"
+        type: "graph"
+        query: "mysql_network_traffic"
+        unit: "MB/sec"
+        
+      - name: "Error Rate"
+        type: "stat"
+        query: "mysql_error_rate"
+        unit: "percent"
+        thresholds: [1, 5]
+        
+      - name: "Response Time"
+        type: "graph"
+        query: "mysql_response_time"
+        unit: "ms"
+
+  # CI/CD Pipeline Monitoring
+  pipeline_monitoring:
+    title: "CI/CD Pipeline Metrics"
+    panels:
+      - name: "Pipeline Success Rate"
+        type: "stat"
+        query: "github_actions_success_rate"
+        unit: "percent"
+        target: 100
+        
+      - name: "Deployment Frequency"
+        type: "stat"
+        query: "deployments_per_day"
+        unit: "deployments"
+        
+      - name: "Schema Change Duration"
+        type: "graph"
+        query: "schema_change_duration"
+        unit: "seconds"
+
+# Alert Integration
+alert_rules:
+  - panel: "CPU Usage"
+    threshold: 80
+    alert: "MySQL High CPU Usage"
+    
+  - panel: "Memory Utilization" 
+    threshold: 90
+    alert: "MySQL Memory Pressure"
+    
+  - panel: "Average Query Duration"
+    threshold: 5
+    alert: "MySQL Slow Queries"
+    
+  - panel: "Active Connections"
+    threshold: 180
+    alert: "MySQL Connection Limit"
+    
+  - panel: "Error Rate"
+    threshold: 5
+    alert: "MySQL Connection Failures"
+
+# Dashboard Settings
+settings:
+  refresh_interval: "30s"
+  time_range: "Last 1 hour"
+  timezone: "America/Toronto"
+  
+# Data Sources
+data_sources:
+  - name: "mysql_metrics"
+    type: "prometheus"
+    url: "http://signoz-collector:8888/metrics"
+    
+  - name: "mysql_logs"
+    type: "loki"
+    url: "http://signoz-collector:3100"
+
+# Variables
+variables:
+  - name: "database"
+    type: "query"
+    query: "show databases"
+    default: "project_db"
+    
+  - name: "table"
+    type: "query" 
+    query: "show tables from project_db"
+    default: "ClimateData"
