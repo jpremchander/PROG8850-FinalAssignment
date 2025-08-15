@@ -99,11 +99,34 @@ docker-compose -f docker-compose-signoz.yml up -d
 - ✅ **Concurrent Testing** (4 points) - Multi-threaded Python script
 - ✅ **Validation** (4 points) - Comprehensive verification
 
-**Evidence:**
+**Reference:**
 - Repository: https://github.com/jpremchander/PROG8850-FinalAssignment
 - Pipeline File: `.github/workflows/ci_cd_pipeline.yml`
 - Latest Run: All 6 stages completed successfully
 - Database: MySQL 8.0 with project_db and ClimateData table
+
+**Visual Evidence:**
+
+![Pipeline Overview](screenshots/pipeline-overview.png)
+*Complete 6-stage CI/CD pipeline execution*
+
+![Environment Setup](screenshots/env-setup.png)
+*Stage 1: Environment setup with MySQL and Python dependencies*
+
+![Database Creation](screenshots/db-creation.png)
+*Stage 2: Database and table creation*
+
+![Schema Update](screenshots/schema-update.png)
+*Stage 3: Adding humidity column to ClimateData table*
+
+![Data Seeding](screenshots/data-seeding.png)
+*Stage 4: Inserting 51 climate records*
+
+![Performance Testing](screenshots/performance-testing.png)
+*Stage 5: Multi-threaded concurrent query execution*
+
+![Validation Results](screenshots/validation-1.png)
+*Stage 6: Comprehensive validation and verification*
 
 #### **Task 2: Advanced Monitoring Setup (15/15 Points)** ✅
 - ✅ **Monitoring Setup** (6 points) - SigNoz stack deployment
@@ -116,6 +139,17 @@ docker-compose -f docker-compose-signoz.yml up -d
 - Dashboard Config: `monitoring/signoz-dashboard-config.yml` (4.2KB)
 - OpenTelemetry: Complete collector configuration
 
+**Visual Evidence:**
+
+![SigNoz Dashboard](screenshots/signoz-ui.png)
+*SigNoz monitoring dashboard accessible at localhost:8081*
+
+![Alert Configuration](screenshots/alerts-config.png)
+*Complete alert setup with 8 performance alerts and email notifications*
+
+![Docker Services](screenshots/docker-ps.png)
+*All monitoring services running successfully*
+
 #### **Task 3: Performance Optimization (5/5 Points)** ✅
 - ✅ **Performance Analysis** (5 points) - Multi-threaded execution testing
 
@@ -123,6 +157,14 @@ docker-compose -f docker-compose-signoz.yml up -d
 - Concurrent Script: 11 threads, 1.10 seconds execution time
 - Database Indexes: Performance optimization implemented
 - Metrics Collection: Real-time performance monitoring
+
+**Visual Evidence:**
+
+![Concurrency Testing](screenshots/concurrency-check.png)
+*Multi-threaded concurrent query execution with 11 threads*
+
+![Performance Results](screenshots/performance-testing.png)
+*Performance optimization results and execution timing*
 
 #### **Documentation & Report (10/10 Points)** ✅
 - ✅ **Complete Documentation** (10 points) - This comprehensive README
@@ -156,6 +198,14 @@ CREATE TABLE ClimateData (
 - **51 records** from 10 different locations
 - **Date range:** 2023-01-01 to 2023-06-10
 - **Locations:** Toronto, Vancouver, Montreal, Calgary, Ottawa, Edmonton, Winnipeg, Halifax, Regina, Victoria
+
+**Visual Evidence:**
+
+![ClimateData Table](screenshots/climatedata.png)
+*ClimateData table structure and sample records*
+
+![Validation Results](screenshots/validation-2.png)
+*Database validation showing 51 records successfully inserted*
 
 ---
 
